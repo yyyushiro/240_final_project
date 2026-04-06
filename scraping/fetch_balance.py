@@ -1,7 +1,9 @@
 import asyncio
+from sqlite3 import Time
 from playwright.async_api import async_playwright
 from dotenv import load_dotenv
 import os
+import json
 
 load_dotenv()
 
@@ -22,12 +24,26 @@ async def main():
         
         await openHistory(page)
         
-        await getBalance(page)
+        balances = await getBalance(page)
         
-        await getTimeline(page)
+        timeline = await getTimeline(page)
         
-        input("Press Enter to close browser...")
         await browser.close()
+        
+    path = os.path.join(os.path.dirname(__file__), "out.json")
+        
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "balances" : balances,
+                "timelineHeader" : timeline.header,
+                "timelineData": timeline.data
+            },
+            f,
+            indent=2
+        )
+        
+        
         
 
 
@@ -94,7 +110,7 @@ async def openHistory(page):
     await page.locator('input[value="View History"]').click()
     print("Opened the spending history page")
         
-async def getBalance(page):
+async def getBalance(page) -> list[list[str]]:
     """Get the balance and return the beginning balance and the ending balance. 
 
     Args:
@@ -119,8 +135,9 @@ async def getBalance(page):
         balanceTable.append(texts)
         
     print(balanceTable)
+    return balanceTable
     
-async def getTimeline(page):
+async def getTimeline(page) -> Timeline:
     """get the actual timeline of dining dollar usage.
 
     Args:
@@ -149,6 +166,21 @@ async def getTimeline(page):
         
     print(historyHeader)
     print(historyData)
+    
+    return Timeline(historyHeader, historyData)
+
+
+
+class Timeline:
+    """
+    The class for containing header and actual data of the timeline.
+    """
+    header: list[str]
+    data: list[list[str]]
+    
+    def __init__(self, header, data) -> None:
+        self.header = header
+        self.data = data
 
 if __name__ == "__main__":
     asyncio.run(main())
