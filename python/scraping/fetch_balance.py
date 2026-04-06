@@ -30,7 +30,7 @@ async def main():
         
         await browser.close()
         
-    path = os.path.join(os.path.dirname(__file__), "out.json")
+    path = os.path.join(os.path.dirname(__file__), "rawHistory.json")
         
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
