@@ -1,4 +1,8 @@
-scraping/.env
-scraping/out.json
+python/scraping/.env
+python/scraping/out.json
 .vscode
 analyzing/build
+analyzing/history.json
+analyzing/balances.json
+python/visualizing/.matplotlib
+python/visualizing/*.png
