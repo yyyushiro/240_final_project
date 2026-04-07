@@ -2,7 +2,7 @@ import asyncio
 import getpass
 import json
 import os
-from playwright.async_api import async_playwright, Page
+from playwright.async_api import Page, async_playwright, expect
 
 # True = visible browser, you log in by hand, then press Enter in the terminal (no prompts).
 loginManually = False
@@ -106,24 +106,35 @@ async def openHistory(page: Page):
     Args:
         page (Page): the current page object.
     """
-    
-    # Go to spending history page
-    await page.locator("a", has_text="ULTD SVC").click()         
-    
-    # Set the beginning date.
+
+    await page.locator("a", has_text="ULTD SVC").click()
+
+    # Wait until Spending History form is actually ready (avoids racing the first open).
+    await page.wait_for_selector(
+        'select[name="FromMonth"]', state="visible", timeout=60_000
+    )
+
     await page.locator('select[name="FromMonth"]').select_option("01")
     await page.locator('select[name="FromDay"]').select_option("12")
     await page.locator('select[name="FromYear"]').select_option("2026")
-    
-    # Set the ending date.
     await page.locator('select[name="ToMonth"]').select_option("06")
     await page.locator('select[name="ToDay"]').select_option("1")
     await page.locator('select[name="ToYear"]').select_option("2026")
-    
-    # Open the history.
+
+    # Some sites update other controls after the last select change; brief settle time.
+    await asyncio.sleep(0.5)
+
     btn = page.locator('input[value="View History"]')
-    await btn.wait_for(state='visible')
+    await btn.scroll_into_view_if_needed()
+    await expect(btn).to_be_visible(timeout=30_000)
+    await expect(btn).to_be_enabled(timeout=60_000)
+
     await btn.click()
+
+    # Do not continue until the same table getBalance() waits on appears.
+    await page.wait_for_selector(
+        'table.fieldlist tbody tr', state="attached", timeout=60_000
+    )
     print("Opened the spending history page")
         
 async def getBalance(page) -> list[list[str]]:

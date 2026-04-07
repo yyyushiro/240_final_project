@@ -24,7 +24,7 @@ static json load_input_json()
 {   // Prepare several paths to make sure loading the json file.
     const char* paths[] = {
         "../python/scraping/out.json",
-        "../../python/scraping/out.json",
+        "../../python/scraping/rawHistory.json",
         "../scraping/out.json",
         "../../scraping/out.json",
     };
