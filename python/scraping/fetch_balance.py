@@ -2,8 +2,7 @@ import asyncio
 import getpass
 import json
 import os
-
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Page
 
 # True = visible browser, you log in by hand, then press Enter in the terminal (no prompts).
 loginManually = False
@@ -26,7 +25,7 @@ async def main():
             return
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=not loginManually)
+        browser = await p.chromium.launch(headless=False)
         context = await browser.new_context()
         page = await context.new_page()
 
@@ -60,7 +59,7 @@ async def main():
             indent=2
         )
 
-async def login(page, username, password) -> bool:
+async def login(page: Page, username: str, password: str) -> bool:
     """Open the One Card Web and log in using the given username and password.
 
     Args:
@@ -101,7 +100,7 @@ async def login(page, username, password) -> bool:
     print("No 'Login failed' message detected.")
     return True
      
-async def openHistory(page):
+async def openHistory(page: Page):
     """Set the date range and open the history.
 
     Args:
@@ -109,7 +108,7 @@ async def openHistory(page):
     """
     
     # Go to spending history page
-    await page.locator("a", has_text="ULTD SVC").click()          
+    await page.locator("a", has_text="ULTD SVC").click()         
     
     # Set the beginning date.
     await page.locator('select[name="FromMonth"]').select_option("01")
@@ -122,7 +121,9 @@ async def openHistory(page):
     await page.locator('select[name="ToYear"]').select_option("2026")
     
     # Open the history.
-    await page.locator('input[value="View History"]').click()
+    btn = page.locator('input[value="View History"]')
+    await btn.wait_for(state='visible')
+    await btn.click()
     print("Opened the spending history page")
         
 async def getBalance(page) -> list[list[str]]:
@@ -197,3 +198,5 @@ class Timeline:
 
 if __name__ == "__main__":
     asyncio.run(main())
+    
+    
