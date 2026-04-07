@@ -1,27 +1,44 @@
 import asyncio
-from sqlite3 import Time
-from playwright.async_api import async_playwright
-from dotenv import load_dotenv
-import os
+import getpass
 import json
+import os
 
-load_dotenv()
+from playwright.async_api import async_playwright
 
-USERNAME = os.environ.get("USERNAME", "").strip()
-PASSWORD = os.environ.get("PASSWORD", "").strip()
+# True = visible browser, you log in by hand, then press Enter in the terminal (no prompts).
+loginManually = False
+
+
+async def prompt_credentials() -> tuple[str, str]:
+    """Ask for NetID and password in the terminal (password is hidden)."""
+    user = (await asyncio.to_thread(input, "NetID / username: ")).strip()
+    pw = (await asyncio.to_thread(getpass.getpass, "Password: ")).strip()
+    return user, pw
+
 
 async def main():
-    if not USERNAME or not PASSWORD:
-        print("USERNAME/PASSWORD is empty. Check scraping/.env")
-        return
+    username = ""
+    password = ""
+    if not loginManually:
+        username, password = await prompt_credentials()
+        if not username or not password:
+            print("Username and password cannot be empty.")
+            return
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch()
+        browser = await p.chromium.launch(headless=not loginManually)
         context = await browser.new_context()
         page = await context.new_page()
 
-        await login(page, USERNAME, PASSWORD)
-        
+        if loginManually:
+            await page.goto("https://onecardweb.richmond.edu/login/ldap.php")
+            print("Log in manually in the browser, then press Enter here to continue...")
+            await asyncio.to_thread(input)
+        elif not await login(page, username, password):
+            print("Login did not succeed; stopping.")
+            await browser.close()
+            return
+
         await openHistory(page)
         
         balances = await getBalance(page)
@@ -42,18 +59,17 @@ async def main():
             f,
             indent=2
         )
-        
-        
-        
 
-
-async def login(page, username, password):
+async def login(page, username, password) -> bool:
     """Open the One Card Web and log in using the given username and password.
 
     Args:
         page (Page): the current page object.
         USERNAME (string): the given username.
         PASSWORD (string): the given password.
+
+    Returns:
+        True if the page does not show a login failure message.
     """
     # Go to the login page.
     await page.goto("https://onecardweb.richmond.edu/login/ldap.php")
@@ -78,14 +94,13 @@ async def login(page, username, password):
     if login_failed:
         error_text = await page.locator("body").inner_text()
         print("Detected login failure on page.")
-        print("Hint: verify credentials and remove spaces/newlines in .env values.")
+        print("Hint: verify credentials (no stray spaces).")
         if username in error_text:
             print("Server received this username:", username)
-        return
-    else:
-        print("No 'Login failed' message detected.")
-    
-    
+        return False
+    print("No 'Login failed' message detected.")
+    return True
+     
 async def openHistory(page):
     """Set the date range and open the history.
 
@@ -168,8 +183,6 @@ async def getTimeline(page) -> Timeline:
     print(historyData)
     
     return Timeline(historyHeader, historyData)
-
-
 
 class Timeline:
     """
