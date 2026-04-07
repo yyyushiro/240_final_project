@@ -1,5 +1,5 @@
 python/scraping/.env
-python/scraping/out.json
+python/scraping/rawHistory.json
 .vscode
 analyzing/build
 analyzing/history.json

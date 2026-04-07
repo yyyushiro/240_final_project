@@ -21,7 +21,7 @@ static double parse_money(std::string s)
 }
 
 static json load_input_json()
-{
+{   // Prepare several paths to make sure loading the json file.
     const char* paths[] = {
         "../python/scraping/out.json",
         "../../python/scraping/out.json",
@@ -39,7 +39,8 @@ static json load_input_json()
 }
 
 int main()
-{
+{   
+    // Load the json file and get a json object.
     const json data = load_input_json();
 
     // Process the balances so that we can treat them as numbers.
@@ -55,7 +56,7 @@ int main()
             balances_obj["ending_balance"] = amount;
     }
 
-    // timelineData: same array-of-arrays shape; Amount column (index 3) as JSON number.
+    // Process the timeline.
     const auto& timeline_rows = data.at("timelineData");
     json timeline_out = json::array();
     for (const auto& row : timeline_rows)
@@ -68,6 +69,7 @@ int main()
         timeline_out.push_back(std::move(new_row));
     }
 
+    // Create a history json object having balances and timeline.
     json history;
     history["balances"] = balances_obj;
     if (data.contains("timelineHeader"))
