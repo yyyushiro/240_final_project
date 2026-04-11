@@ -19,11 +19,23 @@ DATE_FMT = "%m/%d/%Y %H:%M:%S"
 
 
 def history_path() -> Path:
-    # python/visualizing/vizualize.py -> repo/analyzing/history.json
-    return Path(__file__).resolve().parents[2] / "analyzing" / "history.json"
+    """return the file path for the output graph images.
+
+    Returns:
+        Path: the file path for the output graph images.
+    """
+    return Path(__file__).resolve().parents[2] / "jsons" / "history.json"
 
 
 def load_timeline(history_file: Path) -> pd.DataFrame:
+    """load the json file and convert its data into the data frame.
+
+    Args:
+        history_file (Path): the path for the json file.
+
+    Returns:
+        pd.DataFrame: the data frame having the ginve history data.
+    """
     with open(history_file, encoding="utf-8") as f:
         data = json.load(f)
     rows = data["timelineData"]
@@ -37,6 +49,12 @@ def load_timeline(history_file: Path) -> pd.DataFrame:
 
 
 def plot_balance(df: pd.DataFrame, out: Path) -> None:
+    """plot the fluctuation of user's balance over time.
+
+    Args:
+        df (pd.DataFrame): the given data frame of the user's spending history.
+        out (Path): the path for the output graph.
+    """
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(df["Post Date"], df["Balance"], color="tab:blue", linewidth=1.2)
     ax.set_title("Balance over time")
@@ -56,6 +74,12 @@ def plot_balance(df: pd.DataFrame, out: Path) -> None:
 
 
 def plot_daily_spending(df: pd.DataFrame, out: Path) -> None:
+    """plot the user's daily dining dollars usage over time.
+
+    Args:
+        df (pd.DataFrame): the given data frame of user's spending history.
+        out (Path): the path for the output graph.
+    """
     tmp = df.assign(day=df["Post Date"].dt.normalize())
     daily = cast(
         pd.DataFrame,
@@ -86,7 +110,8 @@ def main() -> None:
         raise FileNotFoundError(f"Missing {src}")
 
     df = load_timeline(src)
-    out_dir = Path(__file__).resolve().parent
+    out_dir = Path(__file__).resolve().parents[2] / "results"
+    out_dir.mkdir(exist_ok=True)
     plot_balance(df, out_dir / "balance_over_time.png")
     plot_daily_spending(df, out_dir / "daily_spending.png")
     print(f"Wrote {out_dir / 'balance_over_time.png'}")

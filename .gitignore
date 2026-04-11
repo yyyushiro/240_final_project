@@ -1,8 +1,10 @@
 python/scraping/.env
-python/scraping/rawHistory.json
 .vscode
 analyzing/build
-analyzing/history.json
-analyzing/balances.json
+jsons/rawHistory.json
+jsons/history.json
+jsons/balances.json
 python/visualizing/.matplotlib
 python/visualizing/*.png
+results/*.png
+.DS_Store

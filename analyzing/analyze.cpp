@@ -11,7 +11,12 @@ namespace fs = std::filesystem;
 
 using json = nlohmann::json;
 
-// "$946.14" / " $289.33 " などを double にする
+/**
+ * @brief Remove the dollar sign from the given string and convert it into double.
+ * 
+ * @param s string made by digits and a dollar sign.
+ * @return double the float without dollar sign.
+ */
 static double parse_money(std::string s)
 {
     std::size_t i = 0;
@@ -20,21 +25,19 @@ static double parse_money(std::string s)
     return std::stod(s.substr(i));
 }
 
+
+/**
+ * @brief load the scraping json file.
+ * 
+ * @return json the json object of the spending history.
+ */
 static json load_input_json()
-{   // Prepare several paths to make sure loading the json file.
-    const char* paths[] = {
-        "../python/scraping/out.json",
-        "../../python/scraping/rawHistory.json",
-        "../scraping/out.json",
-        "../../scraping/out.json",
-    };
-    for (const char* p : paths)
-    {
-        std::ifstream f(p);
-        if (f)
-            return json::parse(f);
-    }
-    std::cerr << "failed to open out.json\n";
+{
+    const char* path = "jsons/rawHistory.json";
+    std::ifstream f(path);
+    if (f)
+        return json::parse(f);
+    std::cerr << "failed to open " << path << '\n';
     std::exit(1);
 }
 
@@ -43,7 +46,7 @@ int main()
     // Load the json file and get a json object.
     const json data = load_input_json();
 
-    // Process the balances so that we can treat them as numbers.
+    // process the balances and make a new one with true float values.
     const auto& balances = data.at("balances");
     json balances_obj = json::object();
     for (const auto& row : balances)
@@ -56,7 +59,7 @@ int main()
             balances_obj["ending_balance"] = amount;
     }
 
-    // Process the timeline.
+    // Process the timeline and make a new one with true float values.
     const auto& timeline_rows = data.at("timelineData");
     json timeline_out = json::array();
     for (const auto& row : timeline_rows)
@@ -85,15 +88,12 @@ int main()
     }
     history["timelineData"] = std::move(timeline_out);
 
-    const std::string balances_text = json{{"balances", balances_obj}}.dump(2);
+    // Format the json in a tidy way.
     const std::string history_text = history.dump(2);
 
-    fs::path analyzing_dir = fs::current_path();
-    if (analyzing_dir.filename() == "build")
-        analyzing_dir = analyzing_dir.parent_path();
-
-    const fs::path history_path = analyzing_dir / "history.json";
-
+    // specify the path and create a json file on it. Then, write the json object to it.
+    fs::path repo_root = fs::current_path();
+    const fs::path history_path = repo_root / "jsons" / "history.json";
     std::ofstream history_file(history_path);
     if (!history_file)
     {
@@ -101,8 +101,6 @@ int main()
         return 1;
     }
     history_file << history_text << '\n';
-
-    std::cout << history_text << std::endl;
 
     return 0;
 }

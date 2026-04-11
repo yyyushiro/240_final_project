@@ -4,10 +4,6 @@ import json
 import os
 from playwright.async_api import Page, async_playwright, expect
 
-# True = visible browser, you log in by hand, then press Enter in the terminal (no prompts).
-loginManually = False
-
-
 async def prompt_credentials() -> tuple[str, str]:
     """Ask for NetID and password in the terminal (password is hidden)."""
     user = (await asyncio.to_thread(input, "NetID / username: ")).strip()
@@ -16,24 +12,17 @@ async def prompt_credentials() -> tuple[str, str]:
 
 
 async def main():
-    username = ""
-    password = ""
-    if not loginManually:
-        username, password = await prompt_credentials()
-        if not username or not password:
-            print("Username and password cannot be empty.")
-            return
+    username, password = await prompt_credentials()
+    if not username or not password:
+        print("Username and password cannot be empty.")
+        return
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
         context = await browser.new_context()
         page = await context.new_page()
 
-        if loginManually:
-            await page.goto("https://onecardweb.richmond.edu/login/ldap.php")
-            print("Log in manually in the browser, then press Enter here to continue...")
-            await asyncio.to_thread(input)
-        elif not await login(page, username, password):
+        if not await login(page, username, password):
             print("Login did not succeed; stopping.")
             await browser.close()
             return
@@ -46,7 +35,7 @@ async def main():
         
         await browser.close()
         
-    path = os.path.join(os.path.dirname(__file__), "rawHistory.json")
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "jsons", "rawHistory.json")
         
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
@@ -161,7 +150,6 @@ async def getBalance(page) -> list[list[str]]:
             texts.append((await cells.nth(j).inner_text()).strip())
         balanceTable.append(texts)
         
-    print(balanceTable)
     return balanceTable
     
 async def getTimeline(page) -> Timeline:
@@ -191,9 +179,6 @@ async def getTimeline(page) -> Timeline:
             curRowTexts.append((await historyRows.nth(r).locator('td').nth(c).inner_text()).strip())
         historyData.append(curRowTexts)
         
-    print(historyHeader)
-    print(historyData)
-    
     return Timeline(historyHeader, historyData)
 
 class Timeline:

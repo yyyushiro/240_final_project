@@ -1,40 +1,43 @@
 # 240_final_project
 
-# Environments(complicated)
-## Start
+Scrapes University of Richmond One Card spending history, processes it with C++,
+and visualizes balance and daily spending over time.
+
+## Requirements
+
+- Python 3 + `make`
+- CMake 3.14+ and a C++17 compiler (install via `brew install cmake`)
+
+## Setup (one time)
 
 ```
-git clone https://github.com/yyyushiro/240_final_project.git
-cd 240_final_project
-```
-## Python(`scraping`)
-The code below is for making a virtual environment and installing necessary libraries.
-```
-cd scraping
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-playwright install chromium
-```
-- make .env file contains `USERNAME` and `PASSWORD`(e.g. `USERNAME = ymurakami`, `PASSWORD = richmond`)
-- execution: `python fetch_balance.py`
-- The place of `out.json`: `/scraping`
-
-## C++(`analyzing`)
-The code below is for compiling the C++ files in analyzing.
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" <- If you do not have homebrew
-brew install cmake <- If you do not have cmake
-cd analyzing
-mkdir -p build && cd build
-cmake ..                 
-cmake --build .
-./analyze ../scraping/out.json   
+make setup
 ```
 
-## How to use (for dev)
-1. Create .env file in `./python/scraping` and set your `USERNAME` and `PASSWORD`.
-   This program never saves any of your information, but if you feel threathen, then you can choose login manually + scraping.
-2. Run a python file in scraping. If you made .env file, then enter "Y" in the terminal. If not, log in, then enter "n" in the terminal. You will get the json file with your spending history.
-3. Run a C++ file in analizing. You will get the json file with your processed spending history(for now, it's just parsing the dollars into float).
-4. Run a python file in vizualizing. You will get the vizualized image of the spending history.
+This creates a Python virtual environment, installs all dependencies,
+installs the Playwright Chromium browser, and compiles the C++ analyzer.
+
+## Run the pipeline
+
+```
+make run
+```
+
+Steps in order:
+1. **Scrape** — launches Chromium, logs in to `onecardweb.richmond.edu`, and writes `jsons/rawHistory.json`
+2. **Analyze** — C++ binary parses the JSON and writes `jsons/history.json`
+3. **Visualize** — Python reads the processed data and saves PNGs to `python/visualizing/`
+
+## Individual steps
+
+```
+make scrape    # step 1 only
+make analyze   # step 2 only
+make viz       # step 3 only
+```
+
+## Clean up generated files
+
+```
+make clean
+```
