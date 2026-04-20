@@ -27,6 +27,9 @@ $(BUILD_DIR)/analyze: analyzing/CMakeLists.txt analyzing/analyze.cpp
 scrape: setup-python
 	$(PYTHON) python/scraping/fetch_balance.py
 
+dev-scrape: setup-python
+	$(PYTHON) python/scraping/fetch_balance_dev.py
+
 analyze: setup-cpp
 	$(BUILD_DIR)/analyze
 

@@ -1,4 +1,5 @@
 python/scraping/.env
+python/scraping/fetch_balance_dev.py
 .vscode
 analyzing/build
 jsons/rawHistory.json
@@ -8,3 +9,4 @@ python/visualizing/.matplotlib
 python/visualizing/*.png
 results/*.png
 .DS_Store
+jsons/status.json
