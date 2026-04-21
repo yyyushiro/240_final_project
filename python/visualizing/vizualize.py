@@ -5,6 +5,8 @@ from datetime import date
 from pathlib import Path
 from typing import cast
 
+import numpy as np
+
 # Writable config dir (avoids ~/.matplotlib when not available)
 _viz_dir = Path(__file__).resolve().parent
 os.environ.setdefault("MPLCONFIGDIR", str(_viz_dir / ".matplotlib"))
@@ -177,6 +179,49 @@ def plot_daily_spending(df: pd.DataFrame, out: Path, exp: ExpectationParams) -> 
     plt.close(fig)
 
 
+def plot_shop_stats(df: pd.DataFrame, out: Path) -> None:
+    """Bar charts of visit counts and total dollars spent per shop (Location)."""
+    if df.empty:
+        return
+    grouped = df.groupby("Location", as_index=False).agg(
+        visits=("Amount", "count"),
+        spent=("Amount", "sum"),
+    )
+    order = np.argsort(-np.asarray(grouped["spent"], dtype=float))
+    by_shop = cast(pd.DataFrame, grouped.iloc[order].reset_index(drop=True))
+    if by_shop.empty:
+        return
+
+    locs = by_shop["Location"].astype(str).tolist()
+    x = range(len(locs))
+
+    fig, (ax_visits, ax_spent) = plt.subplots(
+        2,
+        1,
+        figsize=(10, 8),
+        sharex=True,
+        gridspec_kw={"height_ratios": [1, 1]},
+    )
+    ax_visits.bar(x, by_shop["visits"], color="tab:purple", width=0.75)
+    ax_visits.set_ylabel("Visits")
+    ax_visits.set_title("Visits per shop")
+    ax_visits.grid(True, axis="y", alpha=0.3)
+
+    ax_spent.bar(x, by_shop["spent"], color="tab:cyan", width=0.75)
+    ax_spent.set_ylabel("Total spent ($)")
+    ax_spent.set_xlabel("Shop")
+    ax_spent.set_title("Total dollars per shop")
+    ax_spent.set_xticks(list(x))
+    ax_spent.set_xticklabels(locs, rotation=45, ha="right")
+    ax_spent.grid(True, axis="y", alpha=0.3)
+
+    plt.setp(ax_visits.get_xticklabels(), visible=False)
+    fig.suptitle("Spending by shop", y=0.98)
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.93, bottom=0.18, hspace=0.22)
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> None:
     src = history_path()
     if not src.is_file():
@@ -188,8 +233,11 @@ def main() -> None:
     out_dir.mkdir(exist_ok=True)
     plot_balance(df, out_dir / "balance_over_time.png", exp)
     plot_daily_spending(df, out_dir / "daily_spending.png", exp)
+    shop_out = out_dir / "shop_spending.png"
+    plot_shop_stats(df, shop_out)
     print(f"Wrote {out_dir / 'balance_over_time.png'}")
     print(f"Wrote {out_dir / 'daily_spending.png'}")
+    print(f"Wrote {shop_out}")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,16 @@ static double parse_money(std::string s)
 }
 
 
+static std::string parse_shop(std::string s)
+{
+    if (s.find("Tyler") != std::string::npos) return "Tyler";
+    else if (s.find("Cellar") != std::string::npos) return "Cellar";
+    else if (s.find("Passport") != std::string::npos) return "Passport";
+    else if (s.find("8:15") != std::string::npos) return "8:15";
+    else if (s.find("ETC") != std::string::npos) return "ETC";
+    else return s;
+}
+
 /**
  * @brief Convert a "YYYY-MM-DD" string into time_t (local time, noon).
  *        Noon is used so DST shifts cannot flip the whole-day bucket.
@@ -96,6 +106,8 @@ static json load_input_json()
     std::exit(1);
 }
 
+
+
 int main()
 {   
     // Load the json file and get a json object.
@@ -121,7 +133,7 @@ int main()
     {
         json new_row = json::array();
         new_row.push_back(row.at(0));
-        new_row.push_back(row.at(1));
+        new_row.push_back(parse_shop(row.at(1)));
         new_row.push_back(parse_money(row.at(3).get<std::string>()));
         new_row.push_back(parse_money(row.at(4).get<std::string>()));
         timeline_out.push_back(std::move(new_row));
@@ -180,6 +192,9 @@ int main()
     const double tolerance = 0.10;
     const std::string classification = classify(deviation, tolerance);
 
+    const double recommended_daily_usage = end_bal / std::max(1, days_between(today, semester_end));
+    const double recommended_weekly_usage = end_bal / std::max(1, days_between(today, semester_end)) * 7;
+
     json status;
     status["classification"]    = classification;
     status["beginning_balance"] = begin_bal;
@@ -194,6 +209,8 @@ int main()
     status["today"]             = today;
     status["semester_start"]    = semester_start;
     status["semester_end"]      = semester_end;
+    status["recommended_daily_usage"] = recommended_daily_usage;
+    status["recommended_weekly_usage"] = recommended_weekly_usage;
 
     const fs::path status_path = repo_root / "jsons" / "status.json";
     std::ofstream status_file(status_path);
